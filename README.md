@@ -122,13 +122,6 @@ BASCULE1/
 - [ ] Real-time data logging and analysis
 - [ ] Mobile touch controls optimization
 
-## License
-
-Specify your license here (e.g., MIT, GPL-3.0, etc.)
-
-## Author
-
-Created as a neural-physical instrument for electromagnetic field visualization and analysis.
 
 ## Support
 
@@ -137,5 +130,3 @@ For issues, feature requests, or contributions, please refer to the project repo
 ---
 
 **Version**: 1.0.0  
-**Last Updated**: December 2025  
-**Status**: Active Development
