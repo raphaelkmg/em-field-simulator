@@ -1,0 +1,961 @@
+/* ===============================================
+   ELECTROMAGNETIC FIELD SIMULATOR
+   Neural-Physical Instrument Interface
+   Hyper-Precision Laboratory Aesthetic
+   =============================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+/* ============================================
+   DESIGN TOKENS - SCIENTIFIC PRIMARIES
+   ============================================ */
+:root {
+    /* Deep Obsidian Base */
+    --base-obsidian: #05050A;
+    --surface-dark: #0A0A0F;
+    --surface-mid: #101018;
+    --surface-raised: #18181F;
+    --surface-elevated: #1E1E26;
+
+    /* Scientific Primary Accents */
+    --cadmium-orange: #E65100;
+    --cadmium-orange-dim: #BF4400;
+    --cobalt-blue: #1565C0;
+    --cobalt-blue-dim: #0D47A1;
+    --phosphor-green: #4CAF50;
+    --phosphor-green-dim: #388E3C;
+    --phosphor-green-bright: #66BB6A;
+
+    /* Neutral Strokes & Borders */
+    --stroke-subtle: #1A1A22;
+    --stroke-default: #2A2A35;
+    --stroke-emphasis: #3A3A45;
+    --stroke-active: #4A4A55;
+
+    /* Text Hierarchy */
+    --text-primary: #E8E8EC;
+    --text-secondary: #9898A0;
+    --text-tertiary: #686870;
+    --text-dim: #484850;
+
+    /* Data Readout Colors */
+    --data-value: var(--phosphor-green);
+    --data-warning: var(--cadmium-orange);
+    --data-field: var(--cobalt-blue);
+
+    /* Typography */
+    --font-data: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
+    --font-label: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+    /* Spacing Scale */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --space-10: 40px;
+    --space-12: 48px;
+
+    /* Stroke-based Hierarchy (no shadows) */
+    --border-subtle: 1px solid var(--stroke-subtle);
+    --border-default: 1px solid var(--stroke-default);
+    --border-emphasis: 1px solid var(--stroke-emphasis);
+    --border-active: 1px solid var(--stroke-active);
+
+    /* Animation Timing */
+    --ease-mechanical: cubic-bezier(0.4, 0, 0.2, 1);
+    --ease-snap: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    --ease-precise: cubic-bezier(0.25, 0.1, 0.25, 1);
+
+    /* LED Illumination */
+    --led-glow-green: 0 0 8px rgba(76, 175, 80, 0.6);
+    --led-glow-orange: 0 0 8px rgba(230, 81, 0, 0.6);
+    --led-glow-blue: 0 0 8px rgba(21, 101, 192, 0.6);
+}
+
+/* ============================================
+   BASE RESET
+   ============================================ */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html,
+body {
+    height: 100%;
+    overflow: hidden;
+}
+
+body {
+    font-family: var(--font-label);
+    background: var(--base-obsidian);
+    color: var(--text-primary);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ============================================
+   NOISE TEXTURE OVERLAY
+   ============================================ */
+.noise-layer {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.03;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+/* ============================================
+   APP CONTAINER - ASYMMETRIC LAYOUT
+   ============================================ */
+.app-container {
+    position: relative;
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    grid-template-rows: 56px 1fr;
+    height: 100vh;
+    overflow: hidden;
+    background: var(--base-obsidian);
+}
+
+/* ============================================
+   INSTRUMENT HEADER
+   ============================================ */
+.app-header {
+    grid-column: 1 / -1;
+    position: relative;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--space-6);
+    background: var(--surface-dark);
+    border-bottom: var(--border-default);
+}
+
+/* Logo Design - Minimal */
+.logo {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.logo-icon {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface-raised);
+    border: var(--border-default);
+    font-size: 18px;
+}
+
+.logo-text h1 {
+    font-family: var(--font-label);
+    font-size: 0.875rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--text-primary);
+}
+
+.logo-text .tagline {
+    font-size: 0.625rem;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+/* Header Stats - Minimal (will move to HUD) */
+.header-stats {
+    display: flex;
+    gap: var(--space-2);
+}
+
+.stat-card {
+    display: none;
+    /* Hidden - moved to floating HUD */
+}
+
+/* ============================================
+   FLOATING HUD OVERLAY
+   ============================================ */
+.hud-layer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 50;
+}
+
+.hud-corner {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-3);
+    background: rgba(5, 5, 10, 0.85);
+    border: var(--border-default);
+    pointer-events: auto;
+}
+
+.hud-corner.hud-top-left {
+    top: var(--space-4);
+    left: var(--space-4);
+}
+
+.hud-corner.hud-top-right {
+    top: var(--space-4);
+    right: var(--space-4);
+}
+
+.hud-corner.hud-bottom-left {
+    bottom: var(--space-4);
+    left: var(--space-4);
+}
+
+.hud-corner.hud-bottom-right {
+    bottom: var(--space-4);
+    right: var(--space-4);
+}
+
+.hud-label {
+    font-family: var(--font-label);
+    font-size: 0.5rem;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.hud-value {
+    font-family: var(--font-data);
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--phosphor-green);
+    letter-spacing: 0.02em;
+}
+
+/* ============================================
+   TECHNICAL CALIPERS
+   ============================================ */
+.technical-calipers {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 40;
+}
+
+.caliper-track {
+    position: absolute;
+    background: var(--surface-dark);
+    border: var(--border-subtle);
+}
+
+.caliper-track.horizontal {
+    left: 0;
+    right: 0;
+    height: 20px;
+}
+
+.caliper-track.horizontal.top {
+    top: 0;
+    border-top: none;
+}
+
+.caliper-track.horizontal.bottom {
+    bottom: 0;
+    border-bottom: none;
+}
+
+.caliper-track.vertical {
+    top: 0;
+    bottom: 0;
+    width: 20px;
+}
+
+.caliper-track.vertical.left {
+    left: 0;
+    border-left: none;
+}
+
+.caliper-track.vertical.right {
+    right: 0;
+    border-right: none;
+}
+
+.caliper-tick {
+    position: absolute;
+    background: var(--stroke-default);
+}
+
+.caliper-tick.major {
+    background: var(--stroke-emphasis);
+}
+
+.caliper-label {
+    position: absolute;
+    font-family: var(--font-data);
+    font-size: 0.5rem;
+    color: var(--text-dim);
+}
+
+/* ============================================
+   INSTRUMENT PANEL - EQUIPMENT DRAWER STYLE
+   ============================================ */
+.control-panel {
+    position: relative;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    background: var(--surface-dark);
+    border-right: var(--border-default);
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Scrollbar - Minimal */
+.control-panel::-webkit-scrollbar {
+    width: 4px;
+}
+
+.control-panel::-webkit-scrollbar-track {
+    background: var(--surface-dark);
+}
+
+.control-panel::-webkit-scrollbar-thumb {
+    background: var(--stroke-emphasis);
+}
+
+/* ============================================
+   MODE SELECTOR - LED TOGGLE BUTTONS
+   ============================================ */
+.mode-selector {
+    display: flex;
+    gap: 0;
+    background: var(--base-obsidian);
+    border-bottom: var(--border-default);
+}
+
+.mode-btn {
+    position: relative;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-4) var(--space-2);
+    background: var(--surface-dark);
+    border: none;
+    border-right: var(--border-subtle);
+    color: var(--text-tertiary);
+    font-family: var(--font-label);
+    font-size: 0.55rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.15s var(--ease-mechanical);
+}
+
+.mode-btn:last-child {
+    border-right: none;
+}
+
+.mode-btn .icon {
+    font-size: 1.25rem;
+    filter: grayscale(0.6);
+    transition: all 0.2s var(--ease-mechanical);
+}
+
+.mode-btn:hover {
+    color: var(--text-secondary);
+    background: var(--surface-mid);
+}
+
+.mode-btn:hover .icon {
+    filter: grayscale(0.3);
+}
+
+/* Active State - LED Illumination */
+.mode-btn.active {
+    color: var(--text-primary);
+    background: var(--surface-raised);
+}
+
+.mode-btn.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--phosphor-green);
+    box-shadow: var(--led-glow-green);
+}
+
+.mode-btn.active .icon {
+    filter: grayscale(0) drop-shadow(0 0 4px rgba(76, 175, 80, 0.5));
+}
+
+/* ============================================
+   EQUIPMENT DRAWER SECTIONS
+   ============================================ */
+.equipment-drawer {
+    border-bottom: var(--border-default);
+}
+
+.drawer-handle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-3) var(--space-4);
+    background: var(--surface-mid);
+    border: none;
+    color: var(--text-secondary);
+    font-family: var(--font-label);
+    font-size: 0.625rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all 0.15s var(--ease-mechanical);
+}
+
+.drawer-handle:hover {
+    background: var(--surface-raised);
+    color: var(--text-primary);
+}
+
+.drawer-handle::before {
+    content: '';
+    width: 3px;
+    height: 12px;
+    background: var(--cobalt-blue);
+    margin-right: var(--space-3);
+}
+
+.drawer-indicator {
+    font-size: 0.5rem;
+    transition: transform 0.2s var(--ease-mechanical);
+}
+
+.equipment-drawer.expanded .drawer-indicator {
+    transform: rotate(180deg);
+}
+
+.drawer-content {
+    padding: var(--space-4);
+    background: var(--surface-dark);
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s var(--ease-mechanical);
+}
+
+.equipment-drawer.expanded .drawer-content {
+    max-height: 500px;
+}
+
+/* Legacy Control Section - Converted to Drawer Style */
+.control-section {
+    position: relative;
+    background: var(--surface-dark);
+    border-bottom: var(--border-default);
+    padding: var(--space-4);
+}
+
+.control-section h3 {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-family: var(--font-label);
+    font-size: 0.625rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: var(--space-4);
+}
+
+.control-section h3::before {
+    content: '';
+    width: 3px;
+    height: 12px;
+    background: var(--cobalt-blue);
+}
+
+.control-section h3 .section-icon {
+    margin-left: auto;
+    font-size: 0.875rem;
+    opacity: 0.5;
+}
+
+/* ============================================
+   PLAYBACK CONTROLS - BEVELED BUTTONS
+   ============================================ */
+.playback-controls {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 1fr;
+    gap: var(--space-2);
+}
+
+.playback-btn {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+    padding: var(--space-3) var(--space-2);
+    background: linear-gradient(180deg, var(--surface-raised) 0%, var(--surface-mid) 100%);
+    border: var(--border-default);
+    border-radius: 0;
+    color: var(--text-secondary);
+    font-family: var(--font-label);
+    font-size: 0.55rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    transition: all 0.1s var(--ease-mechanical);
+    /* Beveled top edge */
+    box-shadow: inset 0 1px 0 var(--stroke-emphasis);
+}
+
+.playback-btn .icon {
+    font-size: 1rem;
+    transition: all 0.15s var(--ease-mechanical);
+}
+
+.playback-btn:hover {
+    background: linear-gradient(180deg, var(--surface-elevated) 0%, var(--surface-raised) 100%);
+    border-color: var(--stroke-emphasis);
+    color: var(--text-primary);
+}
+
+.playback-btn:active {
+    background: linear-gradient(180deg, var(--surface-mid) 0%, var(--surface-dark) 100%);
+    box-shadow: inset 0 1px 0 var(--stroke-subtle);
+    /* Pressed/indented state */
+}
+
+/* Primary Button - LED Active State */
+.playback-btn.primary {
+    background: linear-gradient(180deg, #0D1A0D 0%, #0A150A 100%);
+    border-color: var(--phosphor-green-dim);
+    color: var(--phosphor-green);
+}
+
+.playback-btn.primary::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 4px;
+    height: 2px;
+    background: var(--phosphor-green);
+    box-shadow: var(--led-glow-green);
+}
+
+.playback-btn.primary:hover {
+    background: linear-gradient(180deg, #102010 0%, #0D180D 100%);
+    border-color: var(--phosphor-green);
+}
+
+/* ============================================
+   FORM CONTROLS - INSTRUMENT STYLE
+   ============================================ */
+.control-group {
+    margin-bottom: var(--space-4);
+}
+
+.control-group:last-child {
+    margin-bottom: 0;
+}
+
+.control-group label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-family: var(--font-label);
+    font-size: 0.625rem;
+    font-weight: 500;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: var(--space-2);
+}
+
+/* Select Dropdown - Instrument Style */
+select {
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    background: var(--surface-mid);
+    border: var(--border-default);
+    border-radius: 0;
+    color: var(--text-primary);
+    font-family: var(--font-data);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s var(--ease-mechanical);
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%234CAF50' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+}
+
+select:hover {
+    border-color: var(--stroke-emphasis);
+}
+
+select:focus {
+    outline: none;
+    border-color: var(--cobalt-blue);
+}
+
+/* ============================================
+   DIAL-AND-TRACK SLIDER
+   ============================================ */
+.dial-slider-container {
+    position: relative;
+    padding: var(--space-2) 0;
+}
+
+.dial-track {
+    position: relative;
+    height: 4px;
+    background: var(--surface-mid);
+    border: var(--border-subtle);
+}
+
+.dial-track-fill {
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    background: var(--cobalt-blue);
+    transition: width 0.05s var(--ease-precise);
+}
+
+.dial-track-ticks {
+    position: absolute;
+    top: 8px;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: space-between;
+}
+
+.dial-tick {
+    width: 1px;
+    height: 4px;
+    background: var(--stroke-default);
+}
+
+.dial-tick.major {
+    height: 8px;
+    background: var(--stroke-emphasis);
+}
+
+.dial-thumb {
+    position: absolute;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    width: 14px;
+    height: 14px;
+    background: linear-gradient(180deg, var(--surface-elevated) 0%, var(--surface-raised) 100%);
+    border: 1px solid var(--stroke-emphasis);
+    cursor: grab;
+    transition: border-color 0.1s var(--ease-mechanical);
+}
+
+.dial-thumb:hover {
+    border-color: var(--cobalt-blue);
+}
+
+.dial-thumb:active {
+    cursor: grabbing;
+    border-color: var(--phosphor-green);
+}
+
+.dial-thumb::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 4px;
+    height: 4px;
+    background: var(--cobalt-blue);
+}
+
+/* Legacy Range Slider (fallback) */
+input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 4px;
+    background: var(--surface-mid);
+    border: var(--border-subtle);
+    cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px;
+    height: 14px;
+    background: linear-gradient(180deg, var(--surface-elevated) 0%, var(--surface-raised) 100%);
+    border: 1px solid var(--stroke-emphasis);
+    cursor: grab;
+    transition: all 0.1s var(--ease-mechanical);
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+    border-color: var(--cobalt-blue);
+}
+
+input[type="range"]::-moz-range-thumb {
+    width: 14px;
+    height: 14px;
+    background: linear-gradient(180deg, var(--surface-elevated) 0%, var(--surface-raised) 100%);
+    border: 1px solid var(--stroke-emphasis);
+    border-radius: 0;
+    cursor: grab;
+}
+
+.range-value {
+    font-family: var(--font-data);
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--phosphor-green);
+}
+
+/* Haptic Value Animation */
+.range-value.haptic-click {
+    animation: hapticClick 0.1s var(--ease-snap);
+}
+
+@keyframes hapticClick {
+    0% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-2px);
+    }
+
+    100% {
+        transform: translateY(0);
+    }
+}
+
+/* ============================================
+   TOGGLE SWITCH - LED INDICATOR
+   ============================================ */
+.checkbox-group {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-2);
+}
+
+.checkbox-group input[type="checkbox"] {
+    position: relative;
+    width: 36px;
+    height: 18px;
+    appearance: none;
+    background: var(--surface-mid);
+    border: var(--border-default);
+    cursor: pointer;
+    transition: all 0.15s var(--ease-mechanical);
+}
+
+.checkbox-group input[type="checkbox"]::before {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 12px;
+    height: 12px;
+    background: linear-gradient(180deg, var(--text-tertiary) 0%, var(--text-dim) 100%);
+    transition: all 0.15s var(--ease-mechanical);
+}
+
+.checkbox-group input[type="checkbox"]:checked {
+    background: #0D1A0D;
+    border-color: var(--phosphor-green-dim);
+}
+
+.checkbox-group input[type="checkbox"]:checked::before {
+    left: 20px;
+    background: var(--phosphor-green);
+    box-shadow: var(--led-glow-green);
+}
+
+.checkbox-group label {
+    margin: 0;
+    font-family: var(--font-label);
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+/* ============================================
+   SIMULATION AREA
+   ============================================ */
+.simulation-area {
+    position: relative;
+    z-index: 10;
+    background: var(--base-obsidian);
+    border-left: var(--border-subtle);
+    overflow: hidden;
+}
+
+#simulation-canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+/* ============================================
+   INFO DISPLAY
+   ============================================ */
+#info-display {
+    font-family: var(--font-data);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+#info-display div {
+    padding: 2px 0;
+}
+
+/* ============================================
+   MECHANICAL SHUTTER TRANSITION
+   ============================================ */
+.shutter-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    pointer-events: none;
+    display: flex;
+}
+
+.shutter-bar {
+    flex: 1;
+    background: var(--surface-dark);
+    border-right: var(--border-subtle);
+    transform: scaleY(0);
+    transform-origin: top;
+    transition: transform 0.3s var(--ease-mechanical);
+}
+
+.shutter-bar:nth-child(even) {
+    transform-origin: bottom;
+}
+
+.shutter-overlay.active .shutter-bar {
+    transform: scaleY(1);
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+.hidden {
+    display: none !important;
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+
+/* ============================================
+   RESPONSIVE
+   ============================================ */
+@media (max-width: 1024px) {
+    .app-container {
+        grid-template-columns: 1fr;
+        grid-template-rows: 56px auto 1fr;
+    }
+
+    .control-panel {
+        border-right: none;
+        border-bottom: var(--border-default);
+        max-height: 280px;
+    }
+
+    .simulation-area {
+        border-left: none;
+    }
+}
+
+/* ============================================
+   ANIMATIONS
+   ============================================ */
+@keyframes fadeSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.control-section {
+    animation: fadeSlideIn 0.3s var(--ease-mechanical) backwards;
+}
+
+.control-section:nth-child(1) {
+    animation-delay: 0.05s;
+}
+
+.control-section:nth-child(2) {
+    animation-delay: 0.1s;
+}
+
+.control-section:nth-child(3) {
+    animation-delay: 0.15s;
+}
+
+.control-section:nth-child(4) {
+    animation-delay: 0.2s;
+}
+
+.control-section:nth-child(5) {
+    animation-delay: 0.25s;
+}
+
+/* Focus States - Precise */
+:focus-visible {
+    outline: 1px solid var(--cobalt-blue);
+    outline-offset: 1px;
+}
+
+/* Selection */
+::selection {
+    background: rgba(21, 101, 192, 0.4);
+}

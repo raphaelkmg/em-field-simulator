@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Neural-Physical Electromagnetic Field Simulator with Laboratory Instrument Interface">
+    <meta name="theme-color" content="#05050A">
+    <title>EM Field Simulator | Neural-Physical Instrument</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚡</text></svg>">
+</head>
+
+<body>
+    <!-- Microscopic Noise Texture Overlay -->
+    <div class="noise-layer" aria-hidden="true"></div>
+
+    <!-- Mechanical Shutter Transition Overlay -->
+    <div class="shutter-overlay" id="shutter-overlay" aria-hidden="true">
+        <div class="shutter-bar"></div>
+        <div class="shutter-bar"></div>
+        <div class="shutter-bar"></div>
+        <div class="shutter-bar"></div>
+        <div class="shutter-bar"></div>
+        <div class="shutter-bar"></div>
+        <div class="shutter-bar"></div>
+        <div class="shutter-bar"></div>
+    </div>
+
+    <div class="app-container">
+        <!-- Instrument Header -->
+        <header class="app-header">
+            <div class="logo">
+                <div class="logo-icon">⚡</div>
+                <div class="logo-text">
+                    <h1>EM Field Simulator</h1>
+                    <span class="tagline">Neural-Physical Instrument</span>
+                </div>
+            </div>
+            <!-- Legacy stats container (hidden, moved to HUD) -->
+            <div class="header-stats">
+                <div class="stat-card">
+                    <span class="stat-label">Time</span>
+                    <span class="stat-value" id="time-display-legacy">0.00 ps</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Instrument Control Panel - Equipment Drawer Style -->
+        <aside class="control-panel">
+            <!-- Mode Selector - LED Toggle Buttons -->
+            <div class="mode-selector">
+                <button class="mode-btn active" id="btn-electrostatic">
+                    <span class="icon">⚛️</span>
+                    <span>Electrostatic</span>
+                </button>
+                <button class="mode-btn" id="btn-waves">
+                    <span class="icon">〰️</span>
+                    <span>EM Waves</span>
+                </button>
+                <button class="mode-btn" id="btn-particles">
+                    <span class="icon">🔴</span>
+                    <span>Particles</span>
+                </button>
+            </div>
+
+            <!-- Simulation Control Section -->
+            <div class="control-section">
+                <h3>Simulation Control <span class="section-icon">▶️</span></h3>
+                <div class="playback-controls">
+                    <button class="playback-btn primary" id="btn-play">
+                        <span class="icon">▶</span>
+                        <span>Play</span>
+                    </button>
+                    <button class="playback-btn" id="btn-step">
+                        <span class="icon">⏭</span>
+                        <span>Step</span>
+                    </button>
+                    <button class="playback-btn" id="btn-reset">
+                        <span class="icon">↺</span>
+                        <span>Reset</span>
+                    </button>
+                </div>
+                <div class="control-group" style="margin-top: 16px;">
+                    <label>
+                        Simulation Speed
+                        <span class="range-value" id="speed-value">10</span>
+                    </label>
+                    <input type="range" id="speed-slider" min="1" max="50" value="10">
+                </div>
+            </div>
+
+            <!-- Electrostatic Panel -->
+            <div class="control-section" id="panel-electrostatic">
+                <h3>Electrostatic Field <span class="section-icon">⚡</span></h3>
+
+                <div class="control-group">
+                    <label>Charge Polarity</label>
+                    <select id="charge-type">
+                        <option value="positive">⊕ Positive Charge</option>
+                        <option value="negative">⊖ Negative Charge</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>
+                        Field Magnitude
+                        <span class="range-value" id="charge-value">1.0 nC</span>
+                    </label>
+                    <input type="range" id="charge-magnitude" value="1" min="0.1" max="5" step="0.1">
+                </div>
+
+                <div class="control-group">
+                    <label style="margin-bottom: 12px;">Visualization Layers</label>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="show-field-lines" checked>
+                        <label for="show-field-lines">Electric Field Lines</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="show-vectors">
+                        <label for="show-vectors">Vector Field Overlay</label>
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="show-potential">
+                        <label for="show-potential">Potential Gradient Map</label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Waves Panel -->
+            <div class="control-section hidden" id="panel-waves">
+                <h3>Wave Propagation <span class="section-icon">〰️</span></h3>
+
+                <div class="control-group">
+                    <label>Wave Source Type</label>
+                    <select id="source-type">
+                        <option value="sinusoidal">Sinusoidal Continuous</option>
+                        <option value="gaussian">Gaussian Pulse</option>
+                        <option value="ricker">Ricker Wavelet</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>
+                        Frequency
+                        <span class="range-value" id="freq-value">500 THz</span>
+                    </label>
+                    <input type="range" id="wave-frequency" min="100" max="1000" value="500" step="10">
+                </div>
+
+                <div class="control-group">
+                    <label>
+                        Amplitude
+                        <span class="range-value" id="amp-value">1.0</span>
+                    </label>
+                    <input type="range" id="wave-amplitude" min="0.1" max="2" value="1" step="0.1">
+                </div>
+
+                <div class="control-group">
+                    <label>Left Boundary Condition</label>
+                    <select id="left-boundary">
+                        <option value="abc">Absorbing (ABC)</option>
+                        <option value="pec">Perfect Conductor (PEC)</option>
+                        <option value="periodic">Periodic</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>Right Boundary Condition</label>
+                    <select id="right-boundary">
+                        <option value="abc">Absorbing (ABC)</option>
+                        <option value="pec">Perfect Conductor (PEC)</option>
+                        <option value="periodic">Periodic</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>Material Region</label>
+                    <select id="material-select">
+                        <option value="vacuum">Vacuum (n=1.0)</option>
+                        <option value="glass">Glass (n=1.5)</option>
+                        <option value="water">Water (n=1.33)</option>
+                        <option value="silicon">Silicon (n=3.4)</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Particles Panel -->
+            <div class="control-section hidden" id="panel-particles">
+                <h3>Particle Dynamics <span class="section-icon">🔴</span></h3>
+
+                <div class="control-group">
+                    <label>Particle Species</label>
+                    <select id="particle-type">
+                        <option value="electron">Electron (e⁻)</option>
+                        <option value="proton">Proton (p⁺)</option>
+                        <option value="positron">Positron (e⁺)</option>
+                        <option value="alpha">Alpha (α²⁺)</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>
+                        Magnetic Field Bz
+                        <span class="range-value" id="bz-value">1.00 T</span>
+                    </label>
+                    <input type="range" id="magnetic-field-z" min="-2" max="2" value="1" step="0.1">
+                </div>
+
+                <div class="control-group">
+                    <label>
+                        Electric Field Ex
+                        <span class="range-value" id="ex-value">0.0 MV/m</span>
+                    </label>
+                    <input type="range" id="electric-field-x" min="-1" max="1" value="0" step="0.1">
+                </div>
+
+                <div class="control-group">
+                    <label>
+                        Electric Field Ey
+                        <span class="range-value" id="ey-value">0.0 MV/m</span>
+                    </label>
+                    <input type="range" id="electric-field-y" min="-1" max="1" value="0" step="0.1">
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="relativistic" checked>
+                    <label for="relativistic">Relativistic Corrections (γ)</label>
+                </div>
+            </div>
+
+            <!-- System Status -->
+            <div class="control-section">
+                <h3>System Status <span class="section-icon">📊</span></h3>
+                <div id="info-display">
+                    <div>Ready for simulation</div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Simulation Viewport with HUD Overlays -->
+        <main class="simulation-area">
+            <!-- Floating HUD Corners -->
+            <div class="hud-layer">
+                <div class="hud-corner hud-top-left">
+                    <span class="hud-label">Time</span>
+                    <span class="hud-value" id="time-display">0.00 ps</span>
+                </div>
+                <div class="hud-corner hud-top-right">
+                    <span class="hud-label">Energy</span>
+                    <span class="hud-value" id="energy-display">0.00 J</span>
+                </div>
+                <div class="hud-corner hud-bottom-right">
+                    <span class="hud-label">FPS</span>
+                    <span class="hud-value" id="fps-display">60</span>
+                </div>
+                <div class="hud-corner hud-bottom-left">
+                    <span class="hud-label">Scale</span>
+                    <span class="hud-value" id="scale-display">1.0x</span>
+                </div>
+            </div>
+
+            <!-- Technical Calipers Container -->
+            <div class="technical-calipers" id="technical-calipers"></div>
+
+            <!-- Simulation Canvas -->
+            <canvas id="simulation-canvas"></canvas>
+        </main>
+    </div>
+
+    <!-- Physics Engine Modules -->
+    <script src="js/physics/coulomb.js"></script>
+    <script src="js/physics/fdtd.js"></script>
+    <script src="js/physics/materials.js"></script>
+    <script src="js/physics/particles.js"></script>
+
+    <!-- Visualization Engine -->
+    <script src="js/visualization/colormap.js"></script>
+    <script src="js/visualization/renderer.js"></script>
+
+    <!-- UI Components -->
+    <script src="js/ui/dial-slider.js"></script>
+    <script src="js/ui/technical-calipers.js"></script>
+    <script src="js/ui/mode-transition.js"></script>
+
+    <!-- Interface Controller -->
+    <script src="js/ui/controls.js"></script>
+
+    <!-- Main Application -->
+    <script src="js/app.js"></script>
+
+    <!-- Real-time Data Updates with Haptic Feedback -->
+    <script>
+        // Haptic-style slider value updates
+        const updateSlider = (sliderId, displayId, format) => {
+            const slider = document.getElementById(sliderId);
+            const display = document.getElementById(displayId);
+            if (slider && display) {
+                let lastValue = parseFloat(slider.value);
+                slider.addEventListener('input', (e) => {
+                    const newValue = parseFloat(e.target.value);
+                    display.textContent = format(newValue);
+
+                    // Trigger haptic click animation on value change
+                    if (Math.abs(newValue - lastValue) > 0.01) {
+                        display.classList.remove('haptic-click');
+                        void display.offsetWidth; // Force reflow
+                        display.classList.add('haptic-click');
+                        lastValue = newValue;
+                    }
+                });
+            }
+        };
+
+        updateSlider('charge-magnitude', 'charge-value', v => v.toFixed(1) + ' nC');
+        updateSlider('wave-amplitude', 'amp-value', v => v.toFixed(1));
+        updateSlider('wave-frequency', 'freq-value', v => v + ' THz');
+        updateSlider('magnetic-field-z', 'bz-value', v => v.toFixed(2) + ' T');
+        updateSlider('electric-field-x', 'ex-value', v => v.toFixed(1) + ' MV/m');
+        updateSlider('electric-field-y', 'ey-value', v => v.toFixed(1) + ' MV/m');
+        updateSlider('speed-slider', 'speed-value', v => Math.round(v));
+
+        // Mechanical Shutter Mode Transition
+        const modeButtons = document.querySelectorAll('.mode-btn');
+        const shutterOverlay = document.getElementById('shutter-overlay');
+        const panels = {
+            electrostatic: document.getElementById('panel-electrostatic'),
+            waves: document.getElementById('panel-waves'),
+            particles: document.getElementById('panel-particles')
+        };
+
+        modeButtons.forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (btn.classList.contains('active')) return;
+
+                // Trigger shutter animation
+                shutterOverlay.classList.add('active');
+
+                setTimeout(() => {
+                    // Update active states
+                    modeButtons.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+
+                    // Switch panels
+                    Object.values(panels).forEach(p => p.classList.add('hidden'));
+                    const targetPanel = btn.id.replace('btn-', 'panel-');
+                    if (panels[btn.id.replace('btn-', '')]) {
+                        panels[btn.id.replace('btn-', '')].classList.remove('hidden');
+                    }
+
+                    // Close shutter
+                    setTimeout(() => {
+                        shutterOverlay.classList.remove('active');
+                    }, 150);
+                }, 200);
+            });
+        });
+    </script>
+</body>
+
+</html>
